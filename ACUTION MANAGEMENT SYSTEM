@@ -1,0 +1,157 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.HashMap;
+
+public class harihar {
+    private JFrame frame;
+    private JTextField itemNameField, itemPriceField, bidAmountField, bidderNameField;
+    private JTextArea auctionLog;
+    private JComboBox<String> itemComboBox;
+    private HashMap<String, Integer> items;
+    private HashMap<String, String> highestBidders; // Stores the highest bidder for each item
+
+    public harihar() {
+        items = new HashMap<>();
+        highestBidders = new HashMap<>();
+        initialize();
+    }
+
+    private void initialize() {
+        frame = new JFrame("Auction Management System");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(600, 600);
+        frame.setLayout(new BorderLayout());
+
+        // Title Label
+        JLabel titleLabel = new JLabel("Auction Management System", JLabel.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        frame.add(titleLabel, BorderLayout.NORTH);
+
+        // Seller Panel
+        JPanel sellerPanel = new JPanel(new GridLayout(5, 2, 5, 5)); // Added extra row for "Sell Item" button
+        sellerPanel.setBorder(BorderFactory.createTitledBorder("Seller Section"));
+        sellerPanel.add(new JLabel("Item Name:"));
+        itemNameField = new JTextField();
+        sellerPanel.add(itemNameField);
+
+        sellerPanel.add(new JLabel("Starting Price:"));
+        itemPriceField = new JTextField();
+        sellerPanel.add(itemPriceField);
+
+        JButton addItemButton = new JButton("Add Item");
+        addItemButton.addActionListener(this::addItem);
+        sellerPanel.add(addItemButton);
+
+        JButton sellItemButton = new JButton("Sell Item");
+        sellItemButton.addActionListener(this::sellItem);
+        sellerPanel.add(sellItemButton);
+
+        frame.add(sellerPanel, BorderLayout.WEST);
+
+        // Bidder Panel
+        JPanel bidderPanel = new JPanel(new GridLayout(4, 2, 5, 5));
+        bidderPanel.setBorder(BorderFactory.createTitledBorder("Bidder Section"));
+
+        bidderPanel.add(new JLabel("Select Item:"));
+        itemComboBox = new JComboBox<>();
+        bidderPanel.add(itemComboBox);
+
+        bidderPanel.add(new JLabel("Bidder Name:"));
+        bidderNameField = new JTextField();
+        bidderPanel.add(bidderNameField);
+
+        bidderPanel.add(new JLabel("Bid Amount:"));
+        bidAmountField = new JTextField();
+        bidderPanel.add(bidAmountField);
+
+        JButton placeBidButton = new JButton("Place Bid");
+        placeBidButton.addActionListener(this::placeBid);
+        bidderPanel.add(placeBidButton);
+
+        frame.add(bidderPanel, BorderLayout.EAST);
+
+        // Auction Log
+        auctionLog = new JTextArea();
+        auctionLog.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(auctionLog);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Auction Log"));
+        frame.add(scrollPane, BorderLayout.CENTER);
+
+        frame.setVisible(true);
+    }
+
+    private void addItem(ActionEvent e) {
+        String itemName = itemNameField.getText().trim();
+        String priceText = itemPriceField.getText().trim();
+        if (itemName.isEmpty() || priceText.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "Item name and price are required!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            int startingPrice = Integer.parseInt(priceText);
+            items.put(itemName, startingPrice);
+            itemComboBox.addItem(itemName);
+            auctionLog.append("Item added: " + itemName + " (Starting Price: $" + startingPrice + ")\n");
+            itemNameField.setText("");
+            itemPriceField.setText("");
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(frame, "Price must be a number!", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void placeBid(ActionEvent e) {
+        String selectedItem = (String) itemComboBox.getSelectedItem();
+        String bidderName = bidderNameField.getText().trim();
+        String bidText = bidAmountField.getText().trim();
+
+        if (selectedItem == null || bidderName.isEmpty() || bidText.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "All fields are required!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            int bidAmount = Integer.parseInt(bidText);
+            int currentPrice = items.get(selectedItem);
+
+            if (bidAmount > currentPrice) {
+                items.put(selectedItem, bidAmount);
+                highestBidders.put(selectedItem, bidderName); // Track the highest bidder
+                auctionLog.append("New bid for " + selectedItem + ": $" + bidAmount + " by " + bidderName + "\n");
+                bidAmountField.setText("");
+                bidderNameField.setText("");
+            } else {
+                JOptionPane.showMessageDialog(frame, "Bid must be higher than the current price!", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(frame, "Bid amount must be a number!", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void sellItem(ActionEvent e) {
+        String selectedItem = (String) itemComboBox.getSelectedItem();
+
+        if (selectedItem == null || !items.containsKey(selectedItem)) {
+            JOptionPane.showMessageDialog(frame, "No item selected or item not found!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String highestBidder = highestBidders.get(selectedItem);
+        int finalPrice = items.get(selectedItem);
+
+        if (highestBidder == null) {
+            JOptionPane.showMessageDialog(frame, "No bids placed for this item!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        auctionLog.append("Item sold: " + selectedItem + " for $" + finalPrice + " to " + highestBidder + "\n");
+        items.remove(selectedItem);
+        highestBidders.remove(selectedItem);
+        itemComboBox.removeItem(selectedItem);
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(harihar::new);
+    }
+}
